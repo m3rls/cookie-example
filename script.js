@@ -1,4 +1,4 @@
-import puppeteer from "puppeteer";
+const puppeteer = require("puppeteer");
 
 (async () => {
   const browser = await puppeteer.launch({ headless: "new" });
@@ -15,35 +15,18 @@ import puppeteer from "puppeteer";
   const client = await page.createCDPSession();
   await client.send("Network.enable");
 
-  // Fired when page is about to send HTTP request.
   client.on("Network.requestWillBeSent", (parameters) => {
-    if (parameters.request.url == "https://plausible.io/api/event") {
-      console.log("Plausible", parameters);
-    }
-    pairs[parameters.requestId] = {
-      request: parameters,
-      response: {},
-    };
-
-    // console.log(`The request ${request_url} was initiated by ${initiator_url}.`);
+    console.log('requestWillBeSent', parameters);
   });
-
-  // Fired when HTTP response is available.
   client.on("Network.responseReceived", (parameters) => {
-    if (pairs[parameters.requestId]) {
-      pairs[parameters.requestId].response = parameters;
-    } else {
-      console.log("pairs?", parameters);
-    }
+    console.log('response', parameters);
   });
 
   // Load requested page and wait until the network has gone idle
   await page.goto("https://m3rls.github.io/cookie-example/", { waitUntil: "networkidle0" });
   
-  console.log(
-    "cookies 2",
-    (await client.send("Network.getAllCookies")).cookies
-  );
-
+  console.log("Page Cookies", await page.cookies());
+  console.log("CDP Cookies", (await client.send("Network.getAllCookies")).cookies);
+  
   await browser.close();
 })();
